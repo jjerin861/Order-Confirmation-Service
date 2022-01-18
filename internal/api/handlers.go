@@ -28,9 +28,8 @@ func (s *Server) paymentConfirmation(w http.ResponseWriter, r *http.Request) {
 		orderStatus.StartTime = time.Now()
 	}
 	orderStatus.Amount = paymentData.Amount
-	if paymentData.Payment_status == "confirmed" {
-		orderStatus.PaymentConfirmationProcessed = true
-	} else {
+	orderStatus.PaymentConfirmationProcessed = true
+	if paymentData.Payment_status != "confirmed" {
 		orderStatus.ConfirmationsFailed = append(orderStatus.ConfirmationsFailed, "payment")
 	}
 
@@ -57,9 +56,8 @@ func (s *Server) fraudCheck(w http.ResponseWriter, r *http.Request) {
 		orderStatus.OrderID = fraudCheckData.ReferenceID
 		orderStatus.StartTime = time.Now()
 	}
-	if fraudCheckData.RiskPoints <= 60 {
-		orderStatus.FraudCheckProcessed = true
-	} else {
+	orderStatus.FraudCheckProcessed = true
+	if fraudCheckData.RiskPoints > 60 {
 		orderStatus.ConfirmationsFailed = append(orderStatus.ConfirmationsFailed, "fraud")
 	}
 
@@ -86,9 +84,8 @@ func (s *Server) vendorConfirmation(w http.ResponseWriter, r *http.Request) {
 		orderStatus.OrderID = vendorConfirmationData.OrderID
 		orderStatus.StartTime = time.Now()
 	}
-	if vendorConfirmationData.Status == "confirmed" {
-		orderStatus.VendorConfirmationProcessed = true
-	} else {
+	orderStatus.VendorConfirmationProcessed = true
+	if vendorConfirmationData.Status != "confirmed" {
 		orderStatus.ConfirmationsFailed = append(orderStatus.ConfirmationsFailed, "vendor")
 	}
 
@@ -102,6 +99,12 @@ func (s *Server) vendorConfirmation(w http.ResponseWriter, r *http.Request) {
 func (s *Server) deliveryConfirmation(order *model.OrderStatus) {
 
 	if order.PaymentConfirmationProcessed && order.FraudCheckProcessed && order.VendorConfirmationProcessed {
+		if len(order.ConfirmationsFailed) == 0 {
+			order.Status = "confirmed"
+		} else {
+			order.Status = "errored"
+
+		}
 		order.ProcessingTimeMS = time.Since(order.StartTime).String()
 		orderByte, err := json.Marshal(order)
 		if err != nil {
