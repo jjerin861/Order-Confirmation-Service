@@ -1,0 +1,99 @@
+{
+	"info": {
+		"_postman_id": "472734c1-c581-4f37-9417-820ce4c3156d",
+		"name": "Order confirmation",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "http://localhost:8080/order_status/webhook/payment_confirmation",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"order_id\": \"de-ber-76898\",\n\t\"amount\": 2000,\n\t\"payment_reference\": \"h87j87y9q34rjo8rweqjo9fdckjhdslkmsdf\",\n\t\"payment_status\": \"confirmed\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/order_status/webhook/payment_confirmation",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"order_status",
+						"webhook",
+						"payment_confirmation"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "http://localhost:8080/order_status/webhook/fraud_check",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"reference_id\": \"de-ber-76898\",\n\t\"risk_points\": 10 \n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/order_status/webhook/fraud_check",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"order_status",
+						"webhook",
+						"fraud_check"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "http://localhost:8080/order_status/webhook/vendor_confirmation",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"order\": \"de-ber-76898\",\n\t\"status\": \"confirmed\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8080/order_status/webhook/vendor_confirmation",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"order_status",
+						"webhook",
+						"vendor_confirmation"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
