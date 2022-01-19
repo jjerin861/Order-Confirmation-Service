@@ -35,8 +35,8 @@ func (s *Server) Serve() {
 	server := http.Server{
 		Addr:         s.Port,
 		Handler:      s.InitRouter(),
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 5 * time.Second,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
 	}
 
 	go func() {
