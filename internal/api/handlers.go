@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"order-confirmation-service/internal/model"
 	"time"
+
+	"github.com/cenkalti/backoff"
 )
 
 // paymentConfirmation handler.
@@ -99,37 +101,47 @@ func (s *Server) vendorConfirmation(w http.ResponseWriter, r *http.Request) {
 func (s *Server) deliveryConfirmation(order *model.OrderStatus) {
 
 	if order.PaymentConfirmationProcessed && order.FraudCheckProcessed && order.VendorConfirmationProcessed {
-		if len(order.ConfirmationsFailed) == 0 {
-			order.Status = "confirmed"
-		} else {
-			order.Status = "errored"
+		request := func() error {
 
+			if len(order.ConfirmationsFailed) == 0 {
+				order.Status = "confirmed"
+			} else {
+				order.Status = "errored"
+
+			}
+			order.ProcessingTimeMS = fmt.Sprintf("%dms", time.Since(order.StartTime).Milliseconds())
+			orderByte, err := json.Marshal(order)
+			if err != nil {
+				log.Println("json marshal failed: ", err)
+				return err
+			}
+			req, err := http.NewRequest(
+				"PUT",
+				s.DeliveryConfirmationEndpoint,
+				bytes.NewBuffer(orderByte),
+			)
+			if err != nil {
+				log.Println("new request failed: ", err)
+				return err
+			}
+			res, err := http.DefaultClient.Do(req)
+			if err != nil {
+				log.Println("request failed: ", err)
+				return err
+			}
+			if res.StatusCode != http.StatusOK {
+				log.Println("response not matching, code: ", res.StatusCode)
+				return nil
+			}
+			fmt.Println("deliveryConfirmation completed")
+			return nil
 		}
-		order.ProcessingTimeMS = time.Since(order.StartTime).String()
-		orderByte, err := json.Marshal(order)
+
+		b := backoff.NewExponentialBackOff()
+		err := backoff.Retry(request, backoff.WithMaxRetries(b, 3))
 		if err != nil {
-			log.Println("json marshal failed: ", err)
-			return
+			log.Println("retry failed: ", err)
 		}
-		req, err := http.NewRequest(
-			"PUT",
-			s.DeliveryConfirmationEndpoint,
-			bytes.NewBuffer(orderByte),
-		)
-		if err != nil {
-			log.Println("new request failed: ", err)
-			return
-		}
-		res, err := http.DefaultClient.Do(req)
-		if err != nil {
-			log.Println("request failed: ", err)
-			return
-		}
-		if res.StatusCode != http.StatusOK {
-			log.Println("response not matching, code: ", res.StatusCode)
-			return
-		}
-		fmt.Println("deliveryConfirmation completed")
 	}
 }
 
