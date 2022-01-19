@@ -1,0 +1,84 @@
+Order Confirmation Service
+=======================
+
+## Task Description
+
+Your task is to implement a service for a food delivery company
+
+The new service that needs to be created is called "Order Confirmation Service" and it will be the component that will trigger the pick up and delivery of the order. It has to receive updates from different external platforms through webhooks, when having confirmation from every external service, it should call the Delivery Service to notify that the order should start being processed.
+
+Webhooks calls received:
+
+`POST /order_status/webhook/payment_confirmation` - Will be called when the payment platform verifies the payment (Response not needed):
+```
+POST /order_status/webhook/payment_confirmation
+{
+	"order_id": "de-ber-76898",
+	"amount": 2000 //cents
+	"payment_reference": "h87j87y9q34rjo8rweqjo9fdckjhdslkmsdf",
+	"payment_status": "confirmed"
+}
+```
+
+`POST /order_status/webhook/fraud_check` - Will be called when the fraud platform confirms that the order is not considered a fraud  (Response not needed)
+```
+POST /order_status/webhook/fraud_check
+{
+	"reference_id": "de-ber-76898",
+	"risk_points": 10 // from 0 to 100 (more than 60 is considered fraudulent
+}
+```
+
+`POST /order_status/webhook/vendor_confirmation` - Will be called when the vendor/restaurant confirms that they can process the order  *(Response should be `201`)*
+```
+POST /order_status/webhook/vendor_confirmation
+{
+	"order": "de-ber-76898",
+	"status": "confirmed|rejected" // from 0 to 100 (low risk, high risk)
+}
+```
+
+#### Delivery Service notification
+The requests from the 3 webhooks could happen in different order, and the Delivery Service should be notified only when the 3 confirmations are received:
+
+- Payment has to be confirmed
+- Risk is lower than 60 points
+- Vendor confirmed the order
+
+The request that need to be sent to the delivery service to conrfirm the order is ready, is the following:
+
+`PUT /order_status/webhook/restaurant_confirmation` - Will be called when the vendor/restaurant confirms that they can process the order  (Response not needed)
+```
+PUT /delivery/{order_id}
+
+200 OK
+{
+	"status": "confirmed|errored",
+	"amount": "200", // cents
+	"confirmations_failed": ["payment","fraud","vendor"] // it should mark which platform failed
+	"processing_time_ms": 500ms
+}
+```
+
+Is really important for the company to send the processing time to the delivery service. There is extra logic in that service that behaves differently depending on the confirmation time to ensure the delivery.
+
+#### Bonus Points
+You will get extra points if you implement one of the two extra objectives:
+
+*Implementing an exponential backoff mechanism* for the Delivery Service to ensure the call to it in case of timeout or errors. It should be a maximum of 3 attempts. (Please implement this at the end of the time)
+
+OR
+
+*Implementing an integration test* that creates the 3 webhook calls and verifies the call to the external service
+
+## Submission guidelines and notes
+
+Create a Go API which implements the server described above. Running `go build` in the root directory of this module should produce a working binary. The port of the application should default to `:8080`.
+
+Please use https://requestbin.com/ to register the call to the delivery service after the 3 webhook calls of the service. The response received in request bin should be the confirmation that everything is working fine
+
+Have into consideration that this service MUST BE SCALABLE and there could be multiple pods receiving calls from 1 order.
+
+If the task statement is unclear about something, please feel free to reach out. That being said, decisions about how to treat certain edge cases that may come up are at your discretion.
+
+Good luck, and enjoy! :)
